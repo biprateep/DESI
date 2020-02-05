@@ -88,7 +88,7 @@ class ExpUtils:
                 np.save(self.out_dir / (channel + "_median"), median_arr)
 
                 iqr_arr = iqr(data_cube, axis=0)
-               np.save(self.out_dir / (channel + "_iqr"), iqr_arr)
+                np.save(self.out_dir / (channel + "_iqr"), iqr_arr)
 
             np.save(self.out_dir / channel, data_cube)
             np.save(self.out_dir / (channel + "_readnoise"), data_noise)
