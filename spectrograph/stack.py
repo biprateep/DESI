@@ -96,7 +96,7 @@ class ExpUtils:
         return None
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     file_list = "/global/u2/b/bid13/spectrograph/zero_paths.txt"
     out_dir = "/global/cscratch1/sd/bid13/spectra_stacks/zero_stacks/"
     utils = ExpUtils(file_list=file_list, out_dir=out_dir)
