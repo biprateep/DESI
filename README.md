@@ -1,5 +1,5 @@
 # DESI-notebooks
-Notebooks for collaboration wide communication of analysis and results
+Code and notebooks for DESI data analysis
 
 ### Description of Folders
 * __targeting_systematics__: Check systematics with the target selection algorithms
