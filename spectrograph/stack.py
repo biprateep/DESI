@@ -73,15 +73,15 @@ class ExpUtils:
                     nogain=False,
                     ccd_calibration_filename=False,
                 )
-            data_cube[ind] = proc_img.pix
+                data_cube[ind] = proc_img.pix
 
-            if readnoise_concise:
-                data_noise[ind][0, 0] = proc_img.readnoise[1000, 1000]
-                data_noise[ind][0, 1] = proc_img.readnoise[1000, 3000]
-                data_noise[ind][1, 0] = proc_img.readnoise[3000, 1000]
-                data_noise[ind][1, 1] = proc_img.readnoise[3000, 3000]
-            else:
-                data_noise[ind] = proc_img.readnoise
+                if readnoise_concise:
+                    data_noise[ind][0, 0] = proc_img.readnoise[1000, 1000]
+                    data_noise[ind][0, 1] = proc_img.readnoise[1000, 3000]
+                    data_noise[ind][1, 0] = proc_img.readnoise[3000, 1000]
+                    data_noise[ind][1, 1] = proc_img.readnoise[3000, 3000]
+                else:
+                    data_noise[ind] = proc_img.readnoise
 
             if statistics:
                 median_arr = np.median(data_cube, axis=0)
