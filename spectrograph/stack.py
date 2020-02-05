@@ -84,10 +84,10 @@ class ExpUtils:
                 data_noise[ind] = proc_img.readnoise
 
         if statistics:
-            median_arr = np.median(ccd, axis=0)
+            median_arr = np.median(data_cube, axis=0)
             np.save(self.out_dir / (channel + "_median"), median_arr)
 
-            iqr_arr = iqr(ccd, axis=0)
+            iqr_arr = iqr(data_cube, axis=0)
             np.save(self.out_dir / (channel + "_iqr"), iqr_arr)
 
         np.save(self.out_dir / channel, data_cube)
