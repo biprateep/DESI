@@ -99,5 +99,5 @@ class ExpUtils:
 if __name__ == "main":
     file_list = "/global/u2/b/bid13/spectrograph/zero_paths.txt"
     out_dir = "/global/cscratch1/sd/bid13/spectra_stacks/zero_stacks/"
-    utils = exposure_utils(file_list=file_list, out_dir=out_dir)
+    utils = ExpUtils(file_list=file_list, out_dir=out_dir)
     utils.create_stacks(statistics=True, readnoise_concise=True)
