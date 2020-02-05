@@ -52,7 +52,7 @@ class ExpUtils:
 
             for ind, img_dir in enumerate(img_dirs):
                 exposure = img_dir.parts[-1]
-                img_path = img_dir / ("/desi-" + exposure + ".fits.fz")
+                img_path = img_dir / ("desi-" + exposure + ".fits.fz")
                 prim_header_path = img_dir / ("request-" + exposure + ".json")
 
                 img_hdul = fits.open(img_path)
