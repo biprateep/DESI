@@ -17,7 +17,7 @@ class ExpUtils:
     Returns:
     """
 
-    def __init(self, file_list=None, out_dir=None):
+    def __init__(self, file_list=None, out_dir=None):
         self.file_list = Path(file_list)
         self.out_dir = Path(out_dir)
         self.channels = [
