@@ -90,8 +90,8 @@ class ExpUtils:
             iqr_arr = iqr(ccd, axis=0)
             np.save(self.out_dir / (channel + "_iqr"), iqr_arr)
 
-        np.save(self.out_dir + channel, data_cube)
-        np.save(self.out_dir + channel + "_readnoise", data_noise)
+        np.save(self.out_dir / channel, data_cube)
+        np.save(self.out_dir / (channel + "_readnoise"), data_noise)
 
         return None
 
