@@ -9,7 +9,7 @@ from astropy.io import fits
 from desispec.preproc import preproc
 
 
-class exposure_utils(object):
+class ExpUtils:
     """Produce preprocessed stacks and other statistical fquantities of CCD exposures
     Args:
         file_list (str): path to text file containing the directories having the required exposures
