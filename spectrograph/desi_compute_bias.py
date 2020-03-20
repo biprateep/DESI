@@ -43,10 +43,13 @@ for filename in args.image :
     
     image=fitsfile[args.camera].data.astype("float64")
     
-    if cfinder and cfinder.haskey("AMPLIFIERS") :
-        amp_ids=list(cfinder.value("AMPLIFIERS"))
-    else :
-        amp_ids=['A','B','C','D']
+    #BD blocked this as proper calib file is not found
+#     if cfinder and cfinder.haskey("AMPLIFIERS") :
+#         amp_ids=list(cfinder.value("AMPLIFIERS"))
+#     else :
+#         amp_ids=['A','B','C','D']
+    # Use this instead
+    amp_ids=['A','B','C','D']
     
     n0=image.shape[0]//2
     n1=image.shape[1]//2
