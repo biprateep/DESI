@@ -5,130 +5,110 @@ import sys,string
 import astropy.io.fits as pyfits
 import argparse
 import numpy as np
-#import matplotlib.pyplot as plt
-import scipy.ndimage.filters
+from scipy.stats import iqr
 
+from desispec import io
 from desiutil.log import get_logger
 from desispec.preproc import  _parse_sec_keyword
 from desispec.maskbits import ccdmask
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-description="Compute a mask using preprocessed dark images",
- epilog='''
-                                 Input is a list of preprocessed dark images.
-                                 This code will mask nsig. outliers, mask entire rows and columns above a given fraction of masked pixels.
-                                 Remove from mask isolated pixels that are presumably statistical fluctuations,
-                                 apply a median filter of size npix to smooth the mask (can be turned off by setting npix=0)
-                                 This code was used to procude the EM spectrograph early NIR (Z1) ccd data mask.
-                                 ''')
+description="Compute a mask using dark images",
+ epilog='''Input is a list of raw dark images (Possibly with different exposure times). Raw images are preprocessed with ONLY gain (if available) and bias corrections and calculated per unit time. Median and IQR of the darks are calculated and cuts set in that domain to create the masks.''')
 
-parser.add_argument('-i','--image', type = str, default = None, required = True,
-                    help = 'path of preprocessed dark image fits file')
-parser.add_argument('-o','--out', type = str, default = None, required = True,
-                    help = 'path to output mask fits file')
-parser.add_argument('--nsig', type = float, default = 3., required = False,
-                    help = 'n sigma threshold')
-parser.add_argument('--frac', type = float, default = 0.2, required = False,
-                    help = 'fraction of bad pixels in row or column above which the entire row or column is masked')
-parser.add_argument('--npix', type = int, default = 50, required = False,
-                    help = 'number of pixels for median filtering')
+parser.add_argument('-i','--image', type = str, default = None, required = True, nargs="*",
+                    help = 'path of raws image fits files')
+parser.add_argument('-o','--outfile', type = str, default = None, required = True,
+                    help = 'output mask filename')
+parser.add_argument('--camera',type = str, required = True,
+                    help = 'header HDU (int or string)')
 
+parser.add_argument('--bias', type = str, default = None, required=True,
+                        help = 'bias image calibration file')
+
+parser.add_argument('--minmed', type = float, default = None, required = True,
+                    help = 'Minimum threshold for good median')
+parser.add_argument('--maxmed', type = float, default = None, required = True,
+                    help = 'Maximum threshold for good median')
+parser.add_argument('--miniqr', type = float, default = None, required = True,
+                    help = 'Minimum threshold for good IQR')
+parser.add_argument('--maxiqr', type = float, default = None, required = True,
+                    help = 'Minimum threshold for good IQR')
+parser.add_argument('--savestat', type = bool, default = False, required = False,
+                    help = 'Whether to save the intermediate dark frame statistics')
+parser.add_argument('--outfilestat', type = str, default = None, required = False,
+                    help = 'output image filename for statistics file')
 
 args = parser.parse_args()
 log  = get_logger()
 
+log.info("read images ...")
 
-image_file  = pyfits.open(args.image)
-flux = image_file[0].data
-ivar = image_file["IVAR"].data*(image_file["MASK"].data==0)
-# remove median flux to remove mean dark current
-flux -= np.median(flux)
+shape=None
+images=[]
 
-mask   = np.zeros(flux.shape, dtype=np.int32)
+for filename in args.image :
 
-mask[(ivar*flux**2)>(args.nsig**2)] |= ccdmask.BAD
+    log.info(filename)
 
-log.info("mask entire row or column if more than %f of pixels are masked"%args.frac)
-masked_lines = np.zeros(flux.shape, dtype=np.int32)
-n0=mask.shape[0]
-n1=mask.shape[1]
-for i in range(mask.shape[0]) :
-    badfrac=np.sum(mask[i]&ccdmask.BAD)/float(n1*ccdmask.BAD)
-    if badfrac>args.frac :
-        log.info("masking entire row %d with a fraction of bad pixels=%f"%(i,badfrac))
-        masked_lines[i] |= ccdmask.BAD
-for i in range(mask.shape[1]) :
-    badfrac=np.sum(mask[:,i]&ccdmask.BAD)/float(n0*ccdmask.BAD)
-    if badfrac>args.frac :
-        log.info("masking entire column %d with a fraction of bad pixels=%f"%(i,badfrac))
-        masked_lines[:,i] |= ccdmask.BAD
+    # collect exposure times
+    fitsfile=pyfits.open(filename)
+    primary_header = fitsfile[0].header
+    if not "EXPTIME" in primary_header :
+        primary_header = fitsfile[1].header
+    exptime = primary_header["EXPTIME"]
+    fitsfile.close()
 
-only_rows_or_columns = False
+    # read raw data and preprocess them
+    img = io.read_raw(filename, args.camera,
+                      bias=args.bias,
+                      nogain=False,
+                      nocosmic=True,
+                      mask=False,
+                      dark=False,
+                      pixflat=False,
+                      nocrosstalk=True,
+                      ccd_calibration_filename=False)
 
-if only_rows_or_columns :
-    mask = masked_lines
-else :
-    mask |= masked_lines
-
-
-log.info("mask all rows left (or right) of entirely masked row")
-# up
-for i in np.arange(mask.shape[0]//2,mask.shape[0]) :
-    ismasked=np.sum(mask[i]&ccdmask.BAD)==float(n1*ccdmask.BAD)
-    if ismasked :
-        log.info("mask all rows >= %d"%i)
-        mask[i:] |=ccdmask.BAD
-        break
-# down
-for i in np.arange(mask.shape[0]//2,0,-1) :
-    ismasked=np.sum(mask[i]&ccdmask.BAD)==float(n1*ccdmask.BAD)
-    if ismasked :
-        log.info("mask all rows <= %d"%i)
-        mask[:i] |=ccdmask.BAD
-        break
-# right
-for i in np.arange(mask.shape[1]//2,mask.shape[1]) :
-    ismasked=np.sum(mask[:,i]&ccdmask.BAD)==float(n0*ccdmask.BAD)
-    if ismasked :
-        log.info("mask all columns >= %d"%i)
-        mask[:,i:] |=ccdmask.BAD
-        break
-# left
-for i in np.arange(mask.shape[1]//2,0,-1) :
-    ismasked=np.sum(mask[:,i]&ccdmask.BAD)==float(n0*ccdmask.BAD)
-    if ismasked :
-        log.info("mask all columns <= %d"%i)
-        mask[:,:i] |=ccdmask.BAD
-        break
-
-if not only_rows_or_columns :
-
-    # unmask isolated masked pixels which are probably statistical fluctuations
-    sum99=np.zeros(mask.shape)
-    sum99[1:-1,1:-1]=mask[1:-1,1:-1]
-    sum99[1:-1,1:-1]+=mask[0:-2,1:-1]
-    sum99[1:-1,1:-1]+=mask[2:,1:-1]
-    sum99[1:-1,1:-1]+=mask[1:-1,0:-2]
-    sum99[1:-1,1:-1]+=mask[0:-2,0:-2]
-    sum99[1:-1,1:-1]+=mask[2:,0:-2]
-    sum99[1:-1,1:-1]+=mask[1:-1,2:]
-    sum99[1:-1,1:-1]+=mask[0:-2,2:]
-    sum99[1:-1,1:-1]+=mask[2:,2:]
-    nisolated=np.sum((sum99==mask))
-    log.info("number of isolated masked pixels to unmask = %d"%nisolated)
-    mask[(sum99==mask)]=0
-
-    if args.npix>0 :
-        log.info("do a median filtering")
-        for i in range(n1) :
-            mask[:,i]=scipy.ndimage.filters.median_filter(mask[:,i],args.npix)
-        for i in range(n0) :
-            mask[i]=scipy.ndimage.filters.median_filter(mask[i],args.npix)
+    shape=img.pix.shape
+    log.info("adding dark %s divided by exposure time %f s"%(filename,exptime))
+    images.append(img.pix/exptime)
+    
+images=np.array(images)
 
 
+log.info("compute median image ...")
+med_image = np.median(images, axis=0)
+log.info("computed median image ...")
 
-#chi2=ivar*flux**2
-pyfits.writeto(args.out, mask, overwrite=True)
+log.info("compute IQR image ...")
+iqr_image = iqr(images, axis=0)
+
+if args.savestat:
+    log.info("writing output to %s ..."%args.outfile)
+    hdulist=pyfits.HDUList([pyfits.PrimaryHDU(), pyfits.ImageHDU(med_image, name="MEDIAN"), pyfits.ImageHDU(iqr_image, name="IQR")])
+
+    #Write header info
+    for i, filename in enumerate(args.image) :
+        hdulist[0].header["INPUT%03d"%i]=filename
+    hdulist[0].header["CAMERA"]=args.camera
+    hdulist[0].header["NUMEXP"]=len(args.image)
+
+    hdulist.writeto(args.outfilestat, overwrite=True)
+    log.info("Done writing statistics file")
+    
 
 
-#plt.show()
+mask   = np.zeros(shape, dtype=np.int32)
+
+log.info("writing mask bits")
+#Set the Bad flag absed on thresholds
+mask[(med_image>args.maxmed)|(med_image<args.minmed)|(iqr_image>args.maxiqr)|(iqr_image<args.miniqr)] |= ccdmask.BAD
+#Set hot pixel flag
+mask[(med_image>args.maxmed)] |= ccdmask.HOT
+#Set Dead pixel Flag
+mask[(med_image<args.minmed)|(iqr_image<args.miniqr)] |= ccdmask.DEAD
+#Set high variability flag (change the name in mask bits)
+mask[(iqr_image>args.maxiqr)] |= ccdmask.SATURATED
+pyfits.writeto(args.outfile, mask, overwrite=True)
+log.info("Saved masks file")
