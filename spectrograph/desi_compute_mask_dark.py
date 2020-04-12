@@ -6,18 +6,20 @@ import astropy.io.fits as pyfits
 import argparse
 import numpy as np
 from scipy.stats import iqr
+from scipy.ndimage.morphology import binary_closing
 
 from desispec import io
 from desiutil.log import get_logger
 from desispec.preproc import  _parse_sec_keyword
 from desispec.maskbits import ccdmask
 
+#Parser to take arguments from command line
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 description="Compute a mask using dark images",
- epilog='''Input is a list of raw dark images (Possibly with different exposure times). Raw images are preprocessed with ONLY gain (if available) and bias corrections and calculated per unit time. Median and IQR of the darks are calculated and cuts set in that domain to create the masks.''')
+ epilog='''Input is a list of raw dark images (Possibly with different exposure times). Raw images are preprocessed with ONLY gain (if available) and bias corrections and calculated per unit time. Median and IQR of the darks are calculated and cuts set in that domain in terms of percentiles to create the masks.''')
 
 parser.add_argument('-i','--image', type = str, default = None, required = True, nargs="*",
-                    help = 'path of raws image fits files')
+                    help = 'paths to raw dark image fits files')
 parser.add_argument('-o','--outfile', type = str, default = None, required = True,
                     help = 'output mask filename')
 parser.add_argument('--camera',type = str, required = True,
@@ -26,14 +28,17 @@ parser.add_argument('--camera',type = str, required = True,
 parser.add_argument('--bias', type = str, default = None, required=True,
                         help = 'bias image calibration file')
 
-parser.add_argument('--minmed', type = float, default = None, required = True,
-                    help = 'Minimum threshold for good median')
-parser.add_argument('--maxmed', type = float, default = None, required = True,
-                    help = 'Maximum threshold for good median')
-parser.add_argument('--miniqr', type = float, default = None, required = True,
-                    help = 'Minimum threshold for good IQR')
-parser.add_argument('--maxiqr', type = float, default = None, required = True,
-                    help = 'Minimum threshold for good IQR')
+parser.add_argument('--minmed', type = float, default = 0.0001, required = True,
+                    help = 'Minimum percentile threshold for good median')
+parser.add_argument('--maxmed', type = float, default = 99.999, required = True,
+                    help = 'Maximum percentile threshold for good median')
+parser.add_argument('--miniqr', type = float, default = 0, required = True,
+                    help = 'Minimum percentile threshold for good IQR')
+parser.add_argument('--maxiqr', type = float, default = 99.999, required = True,
+                    help = 'Maximum percentile threshold for good IQR')
+parser.add_argument('--colfrac', type = float, default=0.4, required=False,                       help='If more than this fraction of pixels are blocked in a column, the whole column in that amplifier is blocked.')
+parser.add_argument('--mask', type = str, default = None, required = False,
+                    help = 'Path to a previous mask file. If given, the output is the bitwise OR of the input mask and the mask created by this script.')
 parser.add_argument('--savestat', type = bool, default = False, required = False,
                     help = 'Whether to save the intermediate dark frame statistics')
 parser.add_argument('--outfilestat', type = str, default = None, required = False,
@@ -47,6 +52,7 @@ log.info("read images ...")
 shape=None
 images=[]
 
+#Read all the dark images
 for filename in args.image :
 
     log.info(filename)
@@ -98,17 +104,62 @@ if args.savestat:
     log.info("Done writing statistics file")
     
 
-
+#Create the masks
 mask   = np.zeros(shape, dtype=np.int32)
+minmed = np.percentile(med_image,args.minmed)
+maxmed = np.percentile(med_image,args.maxmed)
+miniqr = np.percentile(iqr_image,args.miniqr)
+maxiqr = np.percentile(iqr_image,args.maxiqr)
 
 log.info("writing mask bits")
 #Set the Bad flag absed on thresholds
-mask[(med_image>args.maxmed)|(med_image<args.minmed)|(iqr_image>args.maxiqr)|(iqr_image<args.miniqr)] |= ccdmask.BAD
+mask[(med_image>maxmed)|(med_image<minmed)|(iqr_image>maxiqr)|(iqr_image<miniqr)] |= ccdmask.BAD
+
+#Close incompletely blocked regions
+closed_mask = binary_closing(mask, iterations=3, structure=np.ones([2,2]).astype(np.int32)) #returns binary array
+closed_mask[closed_mask] = ccdmask.BAD
+mask |= closed_mask
+
+#Block entire columns above a certain threshold per amplifier
+bad_pix = (mask>0)
+bad_pix_upper = bad_pix[0:bad_pix.shape[0]//2,:]
+bad_pix_lower = bad_pix[bad_pix.shape[0]//2:bad_pix.shape[0],:]
+bad_frac_upper = np.sum(bad_pix_upper, axis=0)/(bad_pix.shape[0]//2)
+bad_frac_lower = np.sum(bad_pix_lower, axis=0)/(bad_pix.shape[0]//2)
+bad_cols_upper = np.where(bad_frac_upper>=args.colfrac)
+bad_cols_lower = np.where(bad_frac_lower>=args.colfrac)
+mask[0:bad_pix.shape[0]//2,bad_cols_upper] |= ccdmask.BAD
+mask[bad_pix.shape[0]//2:bad_pix.shape[0],bad_cols_lower] |= ccdmask.BAD
+
+
 #Set hot pixel flag
-mask[(med_image>args.maxmed)] |= ccdmask.HOT
+mask[(med_image>maxmed)] |= ccdmask.HOT
 #Set Dead pixel Flag
-mask[(med_image<args.minmed)|(iqr_image<args.miniqr)] |= ccdmask.DEAD
+mask[(med_image<minmed)|(iqr_image<miniqr)] |= ccdmask.DEAD
 #Set high variability flag (change the name in mask bits)
-mask[(iqr_image>args.maxiqr)] |= ccdmask.SATURATED
-pyfits.writeto(args.outfile, mask, overwrite=True)
+mask[(iqr_image>maxiqr)] |= ccdmask.HIGHVAR
+
+#Incorporate a previously created mask using a bitwise OR
+if args.mask!=None:
+    mask_old = pyfits.open(args.mask)[0].data
+    mask = (mask | mask_old)
+    log.info("Taken bitwise OR of input mask and the generated mask")
+
+mask_percent = np.sum(mask>0)*100/np.product(mask.shape)
+#Write fits file with header info
+
+hdu = pyfits.PrimaryHDU(mask)
+hdu.header["MINMED"] = (args.minmed, 'Minimum percentile threshold for good median')
+hdu.header["MAXMED"] = (args.maxmed, 'Maximum percentile threshold for good median')
+hdu.header["MINIQR"] = (args.miniqr, 'Minimum percentile threshold for good IQR')
+hdu.header["MAXIQR"] = (args.maxiqr, 'Maximum percentile threshold for good IQR')
+hdu.header["COLFRAC"] = (args.colfrac, 'Bad pixel fraction for blocked column in amp')
+hdu.header["CAMERA"] = (args.camera, 'header HDU (int or string)')
+hdu.header["MASKFRAC"] = (mask_percent, 'Percent of pixels blocked')
+hdu.header["BIAS"] = (args.bias, 'Path to bias image')
+hdu.header["OLDMASK"] = (args.mask, 'Path to input mask')
+hdu.header["DARKS"] = (" ".join(args.image), 'paths to raw darks')
+
+
+hdu.writeto(args.outfile, overwrite=True)
 log.info("Saved masks file")
