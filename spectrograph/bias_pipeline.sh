@@ -18,6 +18,6 @@ mapfile -t zeroFiles < zero_paths_20200209.txt
 #Create master bias file
 for cam in "${cameras[@]}"; do
     echo $cam
-    python desi_compute_bias.py -i "${zeroFiles[@]}" -o /global/cscratch1/sd/bid13/desi_masks_dark/bias-$cam.fits --camera $cam
+    desi_compute_bias -i "${zeroFiles[@]}" -o /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/bias-$cam.fits --camera $cam
 
 done
