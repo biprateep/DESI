@@ -10,8 +10,8 @@
 mapfile -t darkFiles < dark_paths_20200209.txt
 
 cam="B0"
-minmed=0.000000
-maxmed=99.9849796295166
+minmed=0.0
+maxmed=99.98555183410645
 miniqr=0.0
 maxiqr=99.98810291290283
 
