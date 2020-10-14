@@ -93,7 +93,7 @@ cam="R0"
 minmed=8.832573967507433e-05
 maxmed=99.99991756264296
 miniqr=0.0
-maxiqr=99.99991756264296
+maxiqr=99.99836302962468
 
 desi_compute_mask_dark -i "${darkFiles[@]}" -o /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/pixmask-$cam.fits --camera $cam --bias /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/bias-$cam.fits --minmed $minmed --maxmed $maxmed --miniqr $miniqr --maxiqr $maxiqr --savestat True --outfilestat /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/dark-stat-$cam.fits
 
@@ -107,17 +107,18 @@ desi_compute_mask_dark -i "${darkFiles[@]}" -o /global/cfs/cdirs/desi/users/bid1
 
 cam="R2"
 minmed=0.01195341676936006
-maxmed=99.97745927123492
+maxmed=99.93463895264044
 miniqr=0.0
-maxiqr=99.97783023934156
+maxiqr=99.93081150392119
+closeiter=50
 
-desi_compute_mask_dark -i "${darkFiles[@]}" -o /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/pixmask-$cam.fits --camera $cam --bias /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/bias-$cam.fits --minmed $minmed --maxmed $maxmed --miniqr $miniqr --maxiqr $maxiqr --savestat True --outfilestat /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/dark-stat-$cam.fits --mask $DESI_SPECTRO_CALIB/ccd/pixmask-r4-M1-48-20190327.fits
+desi_compute_mask_dark -i "${darkFiles[@]}" -o /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/pixmask-$cam.fits --camera $cam --bias /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/bias-$cam.fits --minmed $minmed --maxmed $maxmed --miniqr $miniqr --maxiqr $maxiqr --closeiter $closeiter --savestat True --outfilestat /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/dark-stat-$cam.fits --mask $DESI_SPECTRO_CALIB/ccd/pixmask-r4-M1-48-20190327.fits
 
 cam="R3"
 minmed=0.0
 maxmed=99.99978212984213
 miniqr=0.0
-maxiqr=99.99989989749504
+maxiqr=99.99987045558181
 
 desi_compute_mask_dark -i "${darkFiles[@]}" -o /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/pixmask-$cam.fits --camera $cam --bias /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/bias-$cam.fits --minmed $minmed --maxmed $maxmed --miniqr $miniqr --maxiqr $maxiqr --savestat True --outfilestat /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/dark-stat-$cam.fits
 
@@ -134,8 +135,9 @@ minmed=0.02086842809389756
 maxmed=99.96090113923717
 miniqr=0.0
 maxiqr=99.95798050144525
+closeiter=1
 
-desi_compute_mask_dark -i "${darkFiles[@]}" -o /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/pixmask-$cam.fits --camera $cam --bias /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/bias-$cam.fits --minmed $minmed --maxmed $maxmed --miniqr $miniqr --maxiqr $maxiqr --savestat True --outfilestat /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/dark-stat-$cam.fits --mask $DESI_SPECTRO_CALIB/ccd/pixmask-sm9-r.fits
+desi_compute_mask_dark -i "${darkFiles[@]}" -o /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/pixmask-$cam.fits --camera $cam --bias /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/bias-$cam.fits --minmed $minmed --maxmed $maxmed --miniqr $miniqr --maxiqr $maxiqr --closeiter $closeiter --savestat True --outfilestat /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/dark-stat-$cam.fits --mask $DESI_SPECTRO_CALIB/ccd/pixmask-sm9-r.fits
 
 cam="R6"
 minmed=2.3553530580019823e-05
@@ -149,9 +151,10 @@ cam="R7"
 minmed=0.0009480296058457979
 maxmed=99.99787429386515
 miniqr=0.0
-maxiqr=99.98436045569487
+maxiqr=99.98223474956002
+closeiter=34
 
-desi_compute_mask_dark -i "${darkFiles[@]}" -o /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/pixmask-$cam.fits --camera $cam --bias /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/bias-$cam.fits --minmed $minmed --maxmed $maxmed --miniqr $miniqr --maxiqr $maxiqr --savestat True --outfilestat /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/dark-stat-$cam.fits
+desi_compute_mask_dark -i "${darkFiles[@]}" -o /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/pixmask-$cam.fits --camera $cam --bias /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/bias-$cam.fits --minmed $minmed --maxmed $maxmed --miniqr $miniqr --maxiqr $maxiqr --closeiter $closeiter --savestat True --outfilestat /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/dark-stat-$cam.fits
 
 cam="R8"
 minmed=0.0
@@ -210,7 +213,7 @@ maxiqr=99.99998822323471
 desi_compute_mask_dark -i "${darkFiles[@]}" -o /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/pixmask-$cam.fits --camera $cam --bias /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/bias-$cam.fits --minmed $minmed --maxmed $maxmed --miniqr $miniqr --maxiqr $maxiqr --savestat True --outfilestat /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/dark-stat-$cam.fits
 
 cam="Z5"
-minmed=0.037220466699076325
+minmed=0.009762938425418217 
 maxmed=99.98291780194684
 miniqr=0.0
 maxiqr=99.9681674034211
@@ -231,7 +234,7 @@ maxmed=99.99861623007843
 miniqr=0.0
 maxiqr=99.99911674260325
 
-desi_compute_mask_dark -i "${darkFiles[@]}" -o /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/pixmask-$cam.fits --camera $cam --bias /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/bias-$cam.fits --minmed $minmed --maxmed $maxmed --miniqr $miniqr --maxiqr $maxiqr --savestat True --outfilestat /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/dark-stat-$cam.fits #--mask /global/cscratch1/sd/bid13/desi_masks_dark/prelim-mask-Z7.fits
+desi_compute_mask_dark -i "${darkFiles[@]}" -o /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/pixmask-$cam.fits --camera $cam --bias /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/bias-$cam.fits --minmed $minmed --maxmed $maxmed --miniqr $miniqr --maxiqr $maxiqr --savestat True --outfilestat /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/dark-stat-$cam.fits --mask /global/cfs/cdirs/desi/users/bid13/desi_masks_dark/prelim-mask-Z7.fits
 
 cam="Z8"
 minmed=0.0
