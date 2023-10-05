@@ -1,0 +1,3 @@
+[submodule "DESI-II/prospect"]
+	path = DESI-II/prospect
+	url = git@github.com:biprateep/prospect.git
