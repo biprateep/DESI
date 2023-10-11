@@ -21,7 +21,7 @@ def better_step(bin_edges, y, yerr=None, ax=None, **kwargs):
         bin_edges: The bin edges. This should be one element longer than
             the bin heights array ``y``.
         y: The bin heights.
-        yerr: symmetric error on y.
+        yerr: asymmetric error on y.
         ax (Optional): The axis where this should be plotted.
     """
     new_x = [a for row in zip(bin_edges[:-1], bin_edges[1:]) for a in row]
@@ -30,9 +30,11 @@ def better_step(bin_edges, y, yerr=None, ax=None, **kwargs):
         ax = plt.gca()
     p = ax.plot(new_x, new_y, **kwargs)
     if yerr is not None:
-        new_yerr = np.array([a for row in zip(yerr, yerr) for a in row])
+        new_yerr_lo = np.array([a for row in zip(yerr[0], yerr[0]) for a in row])
+        new_yerr_up = np.array([a for row in zip(yerr[1], yerr[1]) for a in row])
+        new_yerr = np.array([a for row in zip(yerr[0], yerr[1]) for a in row])
         ax.fill_between(
-            new_x, new_y + new_yerr, new_y - new_yerr, alpha=0.1, color=p[0].get_color()
+            new_x,  new_yerr_up, new_yerr_lo, alpha=0.1, color=p[0].get_color()
         )
     return ax
 
